@@ -14,6 +14,7 @@ import (
 type crawlOptions struct {
 	output          string
 	issuesOutput    string
+	canonicalOutput string
 	threads         int
 	depth           int
 	userAgent       string
@@ -73,13 +74,21 @@ func init() {
 				return err
 			}
 
+			if err := output.WriteCanonicalIssues(opts.canonicalOutput, result.CanonicalIssues); err != nil {
+				return err
+			}
+
 			fmt.Printf("\nCrawl complete\n")
 			fmt.Printf("  Discovered:    %d\n", result.Discovered)
 			fmt.Printf("  Valid URLs:    %d\n", len(result.ValidURLs))
 			fmt.Printf("  Broken links:  %d\n", len(result.BrokenLinks))
 			fmt.Printf("  Excluded URLs: %d\n", result.ExcludedURLs)
+			fmt.Printf("  Canonical issues: %d\n", len(result.CanonicalIssues))
+			fmt.Printf("  Missing canonical: %d\n", len(result.MissingCanonicalPages))
+			fmt.Printf("  Multiple canonical: %d\n", len(result.MultipleCanonicalPages))
 			fmt.Printf("\nSitemap written to %s\n", opts.output)
 			fmt.Printf("Broken-link task report written to %s\n", opts.issuesOutput)
+			fmt.Printf("Canonical issue report written to %s\n", opts.canonicalOutput)
 
 			if len(result.BrokenLinks) > 0 {
 				fmt.Fprintf(os.Stderr, "\nBroken links found (%d):\n", len(result.BrokenLinks))
@@ -94,6 +103,7 @@ func init() {
 
 	crawlCmd.Flags().StringVarP(&opts.output, "output", "o", "./sitemap.xml", "Output sitemap file path")
 	crawlCmd.Flags().StringVar(&opts.issuesOutput, "issues-output", "./broken-link-tasks.md", "Output file for broken-link cleanup tasks")
+	crawlCmd.Flags().StringVar(&opts.canonicalOutput, "canonical-report-output", "./canonical-issues.md", "Output file for canonical URL issues")
 	crawlCmd.Flags().IntVar(&opts.threads, "threads", 5, "Maximum concurrent crawler workers")
 	crawlCmd.Flags().IntVar(&opts.depth, "depth", 0, "Max crawl depth (0 = unlimited)")
 	crawlCmd.Flags().StringVar(&opts.userAgent, "user-agent", "GopherSEO-Bot/1.0", "Crawler user-agent")

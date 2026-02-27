@@ -5,6 +5,7 @@ gopherseo.exe
 # Output files
 sitemap.xml
 broken-link-tasks.md
+canonical-issues.md
 link-fix-tasks.md
 
 # Go

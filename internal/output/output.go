@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/tariktz/gopherseo/internal/canonical"
 	"github.com/tariktz/gopherseo/internal/crawler"
 )
 
@@ -140,6 +141,75 @@ func WriteIssueTasks(outputPath string, tasks []crawler.BrokenLinkTask) error {
 		if i < len(tasks)-1 {
 			if _, err := w.WriteString("\n"); err != nil {
 				return writeErr("write task separator", err)
+			}
+		}
+	}
+
+	return flushAndClose()
+}
+
+// WriteCanonicalIssues creates a Markdown checklist at outputPath documenting
+// canonical URL validation issues found during crawl.
+func WriteCanonicalIssues(outputPath string, issues []canonical.Issue) error {
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+		return fmt.Errorf("create canonical output directory: %w", err)
+	}
+
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("create canonical output file: %w", err)
+	}
+
+	w := bufio.NewWriter(f)
+
+	flushAndClose := func() error {
+		if fErr := w.Flush(); fErr != nil {
+			_ = f.Close()
+			return fmt.Errorf("flush canonical issues file: %w", fErr)
+		}
+		if cErr := f.Close(); cErr != nil {
+			return fmt.Errorf("close canonical issues file: %w", cErr)
+		}
+		return nil
+	}
+
+	writeErr := func(msg string, err error) error {
+		_ = f.Close()
+		return fmt.Errorf("%s: %w", msg, err)
+	}
+
+	if _, err := w.WriteString("# Canonical URL Cleanup Tasks\n\n"); err != nil {
+		return writeErr("write canonical header", err)
+	}
+
+	if len(issues) == 0 {
+		if _, err := w.WriteString("No canonical URL issues were found in this crawl.\n"); err != nil {
+			return writeErr("write no-canonical-issues message", err)
+		}
+		return flushAndClose()
+	}
+
+	for i, issue := range issues {
+		if _, err := fmt.Fprintf(w, "- [ ] Resolve canonical issue on `%s`\n", issue.PageURL); err != nil {
+			return writeErr("write canonical task item", err)
+		}
+		if _, err := fmt.Fprintf(w, "  - Type: `%s`\n", issue.Type); err != nil {
+			return writeErr("write canonical task type", err)
+		}
+		if issue.CanonicalURL != "" {
+			if _, err := fmt.Fprintf(w, "  - Canonical target: `%s`\n", issue.CanonicalURL); err != nil {
+				return writeErr("write canonical task target", err)
+			}
+		}
+		if issue.Detail != "" {
+			if _, err := fmt.Fprintf(w, "  - Detail: %s\n", issue.Detail); err != nil {
+				return writeErr("write canonical task detail", err)
+			}
+		}
+
+		if i < len(issues)-1 {
+			if _, err := w.WriteString("\n"); err != nil {
+				return writeErr("write canonical task separator", err)
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tariktz/gopherseo/internal/canonical"
 	"github.com/tariktz/gopherseo/internal/crawler"
 )
 
@@ -232,5 +233,58 @@ func TestWriteIssueTasks_SourceFallback(t *testing.T) {
 
 	if !strings.Contains(string(data), "source page not captured") {
 		t.Error("expected source fallback message for task with no sources")
+	}
+}
+
+func TestWriteCanonicalIssues_NoIssues(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "canonical-issues.md")
+
+	if err := WriteCanonicalIssues(out, nil); err != nil {
+		t.Fatalf("WriteCanonicalIssues: %v", err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+
+	body := string(data)
+	if !strings.Contains(body, "No canonical URL issues") {
+		t.Error("expected no-issues canonical message")
+	}
+}
+
+func TestWriteCanonicalIssues_WithIssues(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "canonical-issues.md")
+
+	issues := []canonical.Issue{
+		{
+			PageURL:      "https://example.com/page-a",
+			CanonicalURL: "https://other.com/page-a",
+			Type:         canonical.IssueCrossDomain,
+			Detail:       "canonical target is on a different host",
+		},
+	}
+
+	if err := WriteCanonicalIssues(out, issues); err != nil {
+		t.Fatalf("WriteCanonicalIssues: %v", err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+
+	body := string(data)
+	if !strings.Contains(body, "# Canonical URL Cleanup Tasks") {
+		t.Error("missing canonical report header")
+	}
+	if !strings.Contains(body, "https://example.com/page-a") {
+		t.Error("missing issue page URL")
+	}
+	if !strings.Contains(body, "cross_domain") {
+		t.Error("missing issue type")
 	}
 }

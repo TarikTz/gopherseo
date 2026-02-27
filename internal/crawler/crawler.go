@@ -15,6 +15,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
+	"github.com/tariktz/gopherseo/internal/canonical"
 	"github.com/tariktz/gopherseo/internal/lastmod"
 )
 
@@ -51,6 +52,16 @@ type Result struct {
 	// LastModified maps each valid URL to its best-available last-modified
 	// timestamp, extracted using the lastmod extraction hierarchy.
 	LastModified map[string]time.Time
+	// CanonicalByPage maps each crawled page URL to the extracted canonical URL
+	// (when present and resolvable).
+	CanonicalByPage map[string]string
+	// MissingCanonicalPages lists pages where no canonical tag was found.
+	MissingCanonicalPages []string
+	// MultipleCanonicalPages lists pages where multiple canonical tags were found.
+	MultipleCanonicalPages []string
+	// CanonicalIssues contains canonical validation findings (cross-domain,
+	// non-HTTP, broken/redirect targets, and loop/chain patterns).
+	CanonicalIssues []canonical.Issue
 	// Discovered is the total number of unique URLs seen during the crawl.
 	Discovered int
 	// ExcludedURLs is the number of URLs that were skipped due to exclusion rules.
@@ -107,6 +118,10 @@ func Crawl(opts Options) (Result, error) {
 	discovered := make(map[string]struct{})
 	sources := make(map[string]map[string]struct{})
 	lastModified := make(map[string]time.Time)
+	canonicalByPage := make(map[string]string)
+	statusByURL := make(map[string]int)
+	missingCanonicalSet := make(map[string]struct{})
+	multipleCanonicalSet := make(map[string]struct{})
 	excluded := 0
 	now := time.Now()
 
@@ -157,21 +172,34 @@ func Crawl(opts Options) (Result, error) {
 			return
 		}
 
+		var header http.Header
+		if r.Headers != nil {
+			header = *r.Headers
+		}
+
+		doc, _ := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+		canonicalInfo := canonical.Extract(normalizedLink, doc)
+		extractedLastMod := lastmod.GetLastModified(header, doc, now)
+
 		mu.Lock()
 		defer mu.Unlock()
 
 		discovered[normalizedLink] = struct{}{}
+		statusByURL[normalizedLink] = r.StatusCode
 		if r.StatusCode >= 200 && r.StatusCode < 400 {
 			valid[normalizedLink] = struct{}{}
 			delete(broken, normalizedLink)
 
-			// Extract last-modified timestamp using the priority hierarchy.
-			var header http.Header
-			if r.Headers != nil {
-				header = *r.Headers
+			lastModified[normalizedLink] = extractedLastMod
+			if canonicalInfo.CanonicalURL != "" {
+				canonicalByPage[normalizedLink] = canonicalInfo.CanonicalURL
 			}
-			doc, _ := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
-			lastModified[normalizedLink] = lastmod.GetLastModified(header, doc, now)
+			if canonicalInfo.Missing {
+				missingCanonicalSet[normalizedLink] = struct{}{}
+			}
+			if canonicalInfo.Multiple {
+				multipleCanonicalSet[normalizedLink] = struct{}{}
+			}
 			return
 		}
 
@@ -193,6 +221,7 @@ func Crawl(opts Options) (Result, error) {
 
 		mu.Lock()
 		broken[normalizedLink] = status
+		statusByURL[normalizedLink] = status
 		delete(valid, normalizedLink)
 		mu.Unlock()
 	})
@@ -238,13 +267,31 @@ func Crawl(opts Options) (Result, error) {
 		return brokenTasks[i].URL < brokenTasks[j].URL
 	})
 
+	missingCanonicalPages := make([]string, 0, len(missingCanonicalSet))
+	for page := range missingCanonicalSet {
+		missingCanonicalPages = append(missingCanonicalPages, page)
+	}
+	sort.Strings(missingCanonicalPages)
+
+	multipleCanonicalPages := make([]string, 0, len(multipleCanonicalSet))
+	for page := range multipleCanonicalSet {
+		multipleCanonicalPages = append(multipleCanonicalPages, page)
+	}
+	sort.Strings(multipleCanonicalPages)
+
+	canonicalIssues := canonical.Validate(canonicalByPage, statusByURL)
+
 	return Result{
-		ValidURLs:       validURLs,
-		BrokenLinks:     brokenURLs,
-		BrokenLinkTasks: brokenTasks,
-		LastModified:    lastModified,
-		Discovered:      len(discovered),
-		ExcludedURLs:    excluded,
+		ValidURLs:               validURLs,
+		BrokenLinks:             brokenURLs,
+		BrokenLinkTasks:         brokenTasks,
+		LastModified:            lastModified,
+		CanonicalByPage:         canonicalByPage,
+		MissingCanonicalPages:   missingCanonicalPages,
+		MultipleCanonicalPages:  multipleCanonicalPages,
+		CanonicalIssues:         canonicalIssues,
+		Discovered:              len(discovered),
+		ExcludedURLs:            excluded,
 	}, nil
 }
 

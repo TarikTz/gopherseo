@@ -30,7 +30,9 @@ GopherSEO crawls a given root URL, recursively discovers all internal pages, val
 - Adjustable crawl depth (`--depth`, `0` = unlimited)
 - Adjustable concurrency (`--threads`)
 - Broken-link detection with source page tracking
+- Canonical URL validation (missing/multiple tags, cross-domain, redirect/broken targets, chains/loops)
 - Markdown task report for broken links (`broken-link-tasks.md`)
+- Markdown task report for canonical issues (`canonical-issues.md`)
 - Custom User-Agent (`--user-agent`)
 - URL exclusion rules via glob patterns (`--exclude`)
 - `robots.txt` compliance via [Colly](https://github.com/gocolly/colly)
@@ -68,6 +70,7 @@ gopherseo crawl https://example.com
 gopherseo crawl https://example.com \
   --output ./sitemap.xml \
   --issues-output ./broken-link-tasks.md \
+  --canonical-report-output ./canonical-issues.md \
   --threads 10 \
   --depth 5
 ```
@@ -84,6 +87,7 @@ gopherseo crawl <url> [flags]
 |------|-------|---------|-------------|
 | `--output` | `-o` | `./sitemap.xml` | Output path for the generated sitemap |
 | `--issues-output` | | `./broken-link-tasks.md` | Output path for broken-link fix tasks |
+| `--canonical-report-output` | | `./canonical-issues.md` | Output path for canonical URL issue tasks |
 | `--threads` | | `5` | Maximum concurrent crawler workers |
 | `--depth` | | `0` | Max crawl depth (`0` = unlimited) |
 | `--user-agent` | | `GopherSEO-Bot/1.0` | Crawler User-Agent string |
@@ -121,12 +125,23 @@ A Markdown checklist of broken links found during the crawl. Its purpose is to p
   - Found on: `https://example.com/contact`
 ```
 
+### canonical-issues.md
+
+A Markdown checklist of canonical URL problems found during the crawl. Its purpose is to provide an actionable queue for SEO canonical cleanup and duplicate-content prevention.
+
+```markdown
+- [ ] Resolve canonical issue on `https://example.com/page-a`
+  - Type: `cross_domain`
+  - Canonical target: `https://other-domain.com/page-a`
+  - Detail: canonical target is on a different host
+```
+
 ## Roadmap
 
 Planned features for upcoming releases:
 
-- [ ] Meta tag analysis (title, description, OG tags)
 - [ ] Canonical URL validation
+- [ ] Meta tag analysis (title, description, OG tags)
 - [ ] `robots.txt` parsing and analysis
 - [ ] Core Web Vitals integration
 - [ ] Schema.org / structured data validation
@@ -147,4 +162,4 @@ Built with these excellent Go libraries:
 
 - [Colly](https://github.com/gocolly/colly) — Elegant scraper and crawler framework
 - [Cobra](https://github.com/spf13/cobra) — CLI framework
-- [snabb/sitemap](https://github.com/snabb/sitemap) — Sitemap XML generation
+- [goquery](https://github.com/PuerkitoBio/goquery) — HTML parsing for metadata extraction
