@@ -1,0 +1,33 @@
+# Binary
+gopherseo
+gopherseo.exe
+
+# Output files
+sitemap.xml
+broken-link-tasks.md
+link-fix-tasks.md
+
+# Go
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# GoReleaser
+dist/
+
+
+#Agents
+TASKS.md
+PDR.md
