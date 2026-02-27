@@ -19,13 +19,13 @@ import (
 // knownFormats lists the date/time layouts we try when parsing timestamps
 // found in HTML or HTTP headers. They are attempted in order.
 var knownFormats = []string{
-	time.RFC3339,                // 2006-01-02T15:04:05Z07:00
-	"2006-01-02T15:04:05Z",     // UTC explicit
-	"2006-01-02T15:04:05",      // no tz
-	"2006-01-02",               // date only (W3C short)
-	time.RFC1123,               // Mon, 02 Jan 2006 15:04:05 MST
-	time.RFC1123Z,              // Mon, 02 Jan 2006 15:04:05 -0700
-	time.RFC850,                // Monday, 02-Jan-06 15:04:05 MST
+	time.RFC3339,           // 2006-01-02T15:04:05Z07:00
+	"2006-01-02T15:04:05Z", // UTC explicit
+	"2006-01-02T15:04:05",  // no tz
+	"2006-01-02",           // date only (W3C short)
+	time.RFC1123,           // Mon, 02 Jan 2006 15:04:05 MST
+	time.RFC1123Z,          // Mon, 02 Jan 2006 15:04:05 -0700
+	time.RFC850,            // Monday, 02-Jan-06 15:04:05 MST
 	"Mon, 2 Jan 2006 15:04:05 MST",
 }
 
