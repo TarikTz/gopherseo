@@ -21,11 +21,11 @@ type Info struct {
 type IssueType string
 
 const (
-	IssueNonHTTPScheme IssueType = "non_http_scheme"
-	IssueCrossDomain   IssueType = "cross_domain"
-	IssueTargetBroken  IssueType = "target_broken"
+	IssueNonHTTPScheme  IssueType = "non_http_scheme"
+	IssueCrossDomain    IssueType = "cross_domain"
+	IssueTargetBroken   IssueType = "target_broken"
 	IssueTargetRedirect IssueType = "target_redirect"
-	IssueLoopOrChain   IssueType = "loop_or_chain"
+	IssueLoopOrChain    IssueType = "loop_or_chain"
 )
 
 // Issue represents a canonical validation finding for a page.

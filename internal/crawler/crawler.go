@@ -282,16 +282,16 @@ func Crawl(opts Options) (Result, error) {
 	canonicalIssues := canonical.Validate(canonicalByPage, statusByURL)
 
 	return Result{
-		ValidURLs:               validURLs,
-		BrokenLinks:             brokenURLs,
-		BrokenLinkTasks:         brokenTasks,
-		LastModified:            lastModified,
-		CanonicalByPage:         canonicalByPage,
-		MissingCanonicalPages:   missingCanonicalPages,
-		MultipleCanonicalPages:  multipleCanonicalPages,
-		CanonicalIssues:         canonicalIssues,
-		Discovered:              len(discovered),
-		ExcludedURLs:            excluded,
+		ValidURLs:              validURLs,
+		BrokenLinks:            brokenURLs,
+		BrokenLinkTasks:        brokenTasks,
+		LastModified:           lastModified,
+		CanonicalByPage:        canonicalByPage,
+		MissingCanonicalPages:  missingCanonicalPages,
+		MultipleCanonicalPages: multipleCanonicalPages,
+		CanonicalIssues:        canonicalIssues,
+		Discovered:             len(discovered),
+		ExcludedURLs:           excluded,
 	}, nil
 }
 
